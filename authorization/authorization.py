@@ -234,7 +234,13 @@ def handle_message(self, toolFlag, messageIsRequest, messageInfo):
                         checkAuthorizationAllUsers(self, messageInfo, self.doUnauthorizedRequest.isSelected())
 
 def checkAuthorizationAllUsers(self, messageInfo, checkUnauthorized=True):    
-    originalHeaders = self._helpers.analyzeResponse(messageInfo.getResponse()).getHeaders()
+    original_response = messageInfo.getResponse()
+    if not original_response:
+        return
+
+    originalHeaders = self._helpers.analyzeResponse(original_response).getHeaders()
+    if not originalHeaders:
+        return
     
     requestResponseUnauthorized = None
     impressionUnauthorized = "Disabled"
@@ -245,7 +251,11 @@ def checkAuthorizationAllUsers(self, messageInfo, checkUnauthorized=True):
         if requestResponseUnauthorized and requestResponseUnauthorized.getResponse():
             unauthorizedResponse = requestResponseUnauthorized.getResponse()
             analyzedResponseUnauthorized = self._helpers.analyzeResponse(unauthorizedResponse)
-            statusCodeUnauthorized = analyzedResponseUnauthorized.getHeaders()[0]
+            unauthorized_headers = analyzedResponseUnauthorized.getHeaders()
+            if not unauthorized_headers:
+                statusCodeUnauthorized = ""
+            else:
+                statusCodeUnauthorized = unauthorized_headers[0]
             contentUnauthorized = getResponseBody(self, requestResponseUnauthorized)
 
             message = makeMessage(self, messageInfo, True, True)
@@ -254,7 +264,8 @@ def checkAuthorizationAllUsers(self, messageInfo, checkUnauthorized=True):
             analyzedResponse = self._helpers.analyzeResponse(newResponse)
 
             oldStatusCode = originalHeaders[0]
-            newStatusCode = analyzedResponse.getHeaders()[0]
+            new_headers = analyzedResponse.getHeaders()
+            newStatusCode = new_headers[0] if new_headers else ""
             oldContent = getResponseBody(self, messageInfo)
             newContent = getResponseBody(self, requestResponse)
 
@@ -288,7 +299,8 @@ def checkAuthorizationAllUsers(self, messageInfo, checkUnauthorized=True):
         if requestResponse and requestResponse.getResponse():
             newResponse = requestResponse.getResponse()
             analyzedResponse = self._helpers.analyzeResponse(newResponse)
-            newStatusCode = analyzedResponse.getHeaders()[0]
+            new_headers = analyzedResponse.getHeaders()
+            newStatusCode = new_headers[0] if new_headers else ""
             oldContent = getResponseBody(self, messageInfo)
             newContent = getResponseBody(self, requestResponse)
             
