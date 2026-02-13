@@ -59,6 +59,17 @@ class TableModel(AbstractTableModel):
     def __init__(self, extender):
         self._extender = extender
 
+    def _get_response_body_length(self, request_response):
+        if not request_response:
+            return 0
+
+        response = request_response.getResponse()
+        if response is None:
+            return 0
+
+        analyzed = self._extender._helpers.analyzeResponse(response)
+        return len(response) - analyzed.getBodyOffset()
+
     def removeRows(self, rows):
         rows.sort(reverse=True)
         for row in rows:
@@ -129,14 +140,9 @@ class TableModel(AbstractTableModel):
         if columnIndex == 2: # URL
             return logEntry._url.toString()
         if columnIndex == 3: # Original Request Length
-            response = logEntry._originalrequestResponse.getResponse()
-            return len(logEntry._originalrequestResponse.getResponse()) - self._extender._helpers.analyzeResponse(response).getBodyOffset()
+            return self._get_response_body_length(logEntry._originalrequestResponse)
         if columnIndex == 4: # Unauthorized Request Length
-            if logEntry._unauthorizedRequestResponse is not None:
-                response = logEntry._unauthorizedRequestResponse.getResponse()
-                return len(logEntry._unauthorizedRequestResponse.getResponse()) - self._extender._helpers.analyzeResponse(response).getBodyOffset()
-            else:
-                return 0
+            return self._get_response_body_length(logEntry._unauthorizedRequestResponse)
         if columnIndex == 5:
             return logEntry._enfocementStatusUnauthorized
 
@@ -153,10 +159,7 @@ class TableModel(AbstractTableModel):
                 user_data = logEntry.get_user_enforcement(user_id)
                 if user_data:
                     if col_type == 0:  # Modified Length
-                        if user_data['requestResponse'] and user_data['requestResponse'].getResponse():
-                            response = user_data['requestResponse'].getResponse()
-                            return len(response) - self._extender._helpers.analyzeResponse(response).getBodyOffset()
-                        return 0
+                        return self._get_response_body_length(user_data['requestResponse'])
                     elif col_type == 1:  # Authorization Status
                         return user_data['enforcementStatus']
                         
